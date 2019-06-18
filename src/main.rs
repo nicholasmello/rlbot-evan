@@ -2,25 +2,48 @@ use std::ops::{Mul, Add, Sub, Div};
 use std::io;
 
 fn main() {
-	unimplemented!();
+	let mut testtesttest = kickoff();
+	let testpacket = Packet {
+		ballLocation: VectorC {x: 0.0, y: 0.0, z: 0.0,},
+		ballVelocity: VectorC {x: 0.0, y: 0.0, z: 0.0,},
+		roundActive: false,
+		evan: PacketPlayer {
+			location: VectorC {x: 0.0, y: 0.0, z: 0.0,},
+			velocity: VectorC {x: 0.0, y: 0.0, z: 0.0,},
+			rotation: VectorC {x: 0.0, y: 0.0, z: 0.0,},
+			isTouching: true,
+			Boost: 100,
+			Team: true,
+		},
+		opponent: PacketPlayer {
+			location: VectorC {x: 0.0, y: 0.0, z: 0.0,},
+			velocity: VectorC {x: 0.0, y: 0.0, z: 0.0,},
+			rotation: VectorC {x: 0.0, y: 0.0, z: 0.0,},
+			isTouching: true,
+			Boost: 100,
+			Team: false,
+		},
+	};
+	println!("{}", testtesttest::available(testpacket));
 }
-
+/*
 fn packetConverter(arg: Type) -> RetType {
 	unimplemented!();
 }
-
+*/
+/*
 fn setup(packet: Packet) -> Controller {
 	let prediction = Kinematics {
 		position: packet.ballLocation,
 		velocity: packet.ballVelocity,
 		acceleration: VectorC {x: 0.0, y: 0.0, z: -650.0},
-		time: 0.0
+		time: 0.0,
 		baseUnitName: "Unit".to_string(),
 	};
-	
+
 	// Needs Controller limiter before return. -1:1
 }
-
+*/
 #[derive(Debug)]
 enum CurrentState {
 	kickoff,
@@ -38,7 +61,7 @@ struct kickoff();
 impl StatePicker for kickoff {
 	fn available(pack: Packet) -> bool {
 		if pack.roundActive == true {
-			true
+			return true;
 		}
 		false
 	}
@@ -49,7 +72,7 @@ impl StatePicker for kickoff {
 		let mut controllerPitch = 0.0;
 		let mut controllerYaw = 0.0;
 		let mut controllerRoll = 0.0;
-		controllerState = Controller {
+		Controller {
 			throttle: 1.0,
 			boost: controllerBoost,
 			steer: controllerSteer,
@@ -61,7 +84,10 @@ impl StatePicker for kickoff {
 		}
 	}
 	fn expired(pack: Packet) -> bool {
-		if pack.
+		if pack.ballLocation.x == 0.0 && pack.ballLocation.y == 0.0 {
+		 	return false;
+		}
+		true
 	}
 }
 
@@ -73,7 +99,7 @@ impl StatePicker for attb {
 	}
 	fn execute(pack: Packet) -> Controller {
 		let mut controllerSteer = 0.0; // Needs steering mechanism.
-		controllerState = Controller {
+		Controller {
 			throttle: 1.0,
 			boost: false,
 			steer: controllerSteer,
@@ -85,9 +111,6 @@ impl StatePicker for attb {
 		}
 	}
 	fn expired(pack: Packet) -> bool {
-		if pack.ballLocation.x == 0 && pack.ballLocation.y == 0 {
-		 	false
-		}
 		true
 	}
 }
@@ -149,7 +172,7 @@ impl Kinematics {
 		}
 	}
 	fn inseconds(self, timef: f64) -> Kinematics {
-		let timeu = timef - self.time
+		let timeu = timef - self.time;
 		Kinematics {
 			position: VectorC {
 				x: ((self.velocity.x * timeu) + (0.5 * self.acceleration.x * timeu * timeu)),
@@ -163,12 +186,13 @@ impl Kinematics {
 			},
 			acceleration: self.acceleration,
 			time: timeu,
+			baseUnitName: "Unit".to_string(),
 		}
 	}
 
 	fn inminutes(self, timefm: f64) -> Kinematics {
 		let timef = timefm / 60.0;
-		let timeu = timef - self.time
+		let timeu = timef - self.time;
 		Kinematics {
 			position: VectorC {
 				x: ((self.velocity.x * timeu) + (0.5 * self.acceleration.x * timeu * timeu)),
@@ -182,13 +206,14 @@ impl Kinematics {
 			},
 			acceleration: self.acceleration,
 			time: timeu,
+			baseUnitName: "Unit".to_string(),
 		}
 	}
 
 	fn inhours(self, timefh: f64) -> Kinematics {
 		let timefm = timefh / 60.0;
 		let timef = timefm / 60.0;
-		let timeu = timef - self.time
+		let timeu = timef - self.time;
 		Kinematics {
 			position: VectorC {
 				x: ((self.velocity.x * timeu) + (0.5 * self.acceleration.x * timeu * timeu)),
@@ -202,6 +227,7 @@ impl Kinematics {
 			},
 			acceleration: self.acceleration,
 			time: timeu,
+			baseUnitName: "Unit".to_string(),
 		}
 	}
 
@@ -209,7 +235,7 @@ impl Kinematics {
 		let timefh = timefd / 12.0;
 		let timefm = timefh / 60.0;
 		let timef = timefm / 60.0;
-		let timeu = timef - self.time
+		let timeu = timef - self.time;
 		Kinematics {
 			position: VectorC {
 				x: ((self.velocity.x * timeu) + (0.5 * self.acceleration.x * timeu * timeu)),
@@ -223,6 +249,7 @@ impl Kinematics {
 			},
 			acceleration: self.acceleration,
 			time: timeu,
+			baseUnitName: "Unit".to_string(),
 		}
 	}
 }
