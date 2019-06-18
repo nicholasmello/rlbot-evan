@@ -2,7 +2,7 @@ use std::ops::{Mul, Add, Sub, Div};
 use std::io;
 
 fn main() {
-	let mut testtesttest = kickoff();
+	let mut testtesttest = kickoff{active: true};
 	let testpacket = Packet {
 		ballLocation: VectorC {x: 0.0, y: 0.0, z: 0.0,},
 		ballVelocity: VectorC {x: 0.0, y: 0.0, z: 0.0,},
@@ -24,7 +24,7 @@ fn main() {
 			Team: false,
 		},
 	};
-	println!("{}", testtesttest::available(testpacket));
+	println!("{}", testtesttest.available(testpacket));
 }
 /*
 fn packetConverter(arg: Type) -> RetType {
@@ -50,22 +50,18 @@ enum CurrentState {
 	attb,
 }
 
-trait StatePicker {
-	fn available(pack: Packet) -> bool;
-	fn execute(pack: Packet) -> Controller;
-	fn expired(pack: Packet) -> bool;
-}
-
 #[derive(Debug)]
-struct kickoff();
-impl StatePicker for kickoff {
-	fn available(pack: Packet) -> bool {
+struct kickoff {
+	active: bool
+}
+impl kickoff {
+	fn available(&self, pack: Packet) -> bool {
 		if pack.roundActive == true {
 			return true;
 		}
 		false
 	}
-	fn execute(pack: Packet) -> Controller {
+	fn execute(&self, pack: Packet) -> Controller {
 		let mut controllerBoost = false;
 		let mut controllerSteer = 0.0;
 		let mut controllerJump = false;
@@ -83,7 +79,7 @@ impl StatePicker for kickoff {
 			drift: false,
 		}
 	}
-	fn expired(pack: Packet) -> bool {
+	fn expired(&self, pack: Packet) -> bool {
 		if pack.ballLocation.x == 0.0 && pack.ballLocation.y == 0.0 {
 		 	return false;
 		}
@@ -93,7 +89,7 @@ impl StatePicker for kickoff {
 
 #[derive(Debug)]
 struct attb();
-impl StatePicker for attb {
+impl attb {
 	fn available(pack: Packet) -> bool {
 		true
 	}
