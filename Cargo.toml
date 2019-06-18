@@ -1,0 +1,7 @@
+[package]
+name = "rlbot-evan"
+version = "0.1.0"
+authors = ["xonmello"]
+edition = "2018"
+
+[dependencies]
