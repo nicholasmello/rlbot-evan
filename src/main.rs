@@ -23,7 +23,8 @@ fn get_input(
     player_index: usize,
     packet: &rlbot::GameTickPacket,
 ) -> Option<rlbot::ControllerState> {
-    let mycontrollerstate = packetConverter();
+	let ball = packet.ball.as_ref()?;
+    let mycontrollerstate = packetConverter(player_index, packet, ball);
 
     Some(rlbot::ControllerState {
         throttle: mycontrollerstate.throttle,
@@ -33,34 +34,43 @@ fn get_input(
         roll: mycontrollerstate.roll,
         jump: mycontrollerstate.jump,
         boost: mycontrollerstate.boost,
-        handbreak: mycontrollerstate.drift,
+        handbrake: mycontrollerstate.drift,
     })
 }
 
-fn packetConverter() -> Controller {
-	let mut rawPacket = &rlbot::GameTickPacket
+
+fn packetConverter(player_index: usize, packet: &rlbot::GameTickPacket, ball: &rlbot::BallInfo) -> Controller {
+	let evan = &packet.players[player_index];
+	let opp = &packet.players[1]; // MIGHT NOT WORK FOR TOURNAMENTS
 	let mut mypacket = Packet {
-		ballLocation: VectorC {x: y: z: },
-		ballVelocity: VectorC {x: y: z: },
-		roundActive: bool,
+		ballLocation: VectorC {x: ball.physics.location.x, y: ball.physics.location.y, z: ball.physics.location.z, },
+		ballVelocity: VectorC {x: ball.physics.velocity.x, y: ball.physics.velocity.y, z: ball.physics.velocity.z, },
+		roundActive: packet.game_info.is_round_active,
 		evan: PacketPlayer {
-			location: VectorC {x: y: z: },
-			velocity: VectorC {x: y: z: },
-			rotation: VectorC {x: y: z: },
-			isTouching: bool,
-			boost: i8,
-			Team: bool,
+			location: VectorC {x: evan.physics.location.x, y: evan.physics.location.y, z: evan.physics.location.z, },
+			velocity: VectorC {x: evan.physics.velocity.x, y: evan.physics.velocity.y, z: evan.physics.velocity.z, },
+			rotation: RotatorC {pitch: evan.physics.rotation.pitch, yaw: evan.physics.rotation.yaw, roll: evan.physics.rotation.roll, },
+			isTouching: evan.has_wheel_contact,
+			boost: evan.boost,
+			team: teamtobool(evan.team),
 		},
 		opponent: PacketPlayer {
-			location: VectorC {x: y: z: },
-			velocity: VectorC {x: y: z: },
-			rotation: VectorC {x: y: z: },
-			isTouching: bool,
-			boost: i8,
-			Team: bool,
+			location: VectorC {x: opp.physics.location.x, y: opp.physics.location.y, z: opp.physics.location.z, },
+			velocity: VectorC {x: opp.physics.velocity.x, y: opp.physics.velocity.y, z: opp.physics.velocity.z, },
+			rotation: RotatorC {pitch: opp.physics.rotation.pitch, yaw: opp.physics.rotation.yaw, roll: opp.physics.rotation.roll, },
+			isTouching: opp.has_wheel_contact,
+			boost: opp.boost,
+			team: teamtobool(opp.team),
 		},
-	}
+	};
 	evan_input(mypacket)
+}
+
+fn teamtobool(team: i32) -> bool {
+	if team == 0 {
+		return true
+	}
+	false
 }
 
 fn evan_input(packet: Packet) -> Controller {
@@ -71,7 +81,8 @@ fn evan_input(packet: Packet) -> Controller {
 		time: 0.0,
 		baseUnitName: "Unit".to_string(),
 	};
-
+	let mut current_state = kickoff {active: true};
+	current_state.execute(packet)
 	// Needs Controller limiter before return. -1:1
 }
 
@@ -93,7 +104,7 @@ impl kickoff {
 		false
 	}
 	fn execute(&self, pack: Packet) -> Controller {
-		let mut controllerBoost = false;
+		let mut controllerBoost = true;
 		let mut controllerSteer = 0.0;
 		let mut controllerJump = false;
 		let mut controllerPitch = 0.0;
@@ -145,13 +156,13 @@ impl attb {
 /* CUSTOM CONTROLLER AND PACKET */
 #[derive(Debug)]
 struct Controller {
-	throttle: f64,
+	throttle: f32,
 	boost: bool,
-	steer: f64,
+	steer: f32,
 	jump: bool,
-	pitch: f64,
-	yaw: f64,
-	roll: f64,
+	pitch: f32,
+	yaw: f32,
+	roll: f32,
 	drift: bool,
 }
 
@@ -168,10 +179,10 @@ struct Packet {
 struct PacketPlayer {
 	location: VectorC,
 	velocity: VectorC,
-	rotation: VectorC,
+	rotation: RotatorC,
 	isTouching: bool,
-	Boost: i8,
-	Team: bool,
+	boost: i32,
+	team: bool,
 }
 
 /* KINEMATICS AND BALL PREDICTION */
@@ -180,7 +191,7 @@ struct Kinematics {
 	position: VectorC,
 	velocity: VectorC,
 	acceleration: VectorC,
-	time: f64,
+	time: f32,
 	baseUnitName: String,
 }
 
@@ -198,7 +209,7 @@ impl Kinematics {
 			println!("At time {}, the object will be {} {}s away going at a speed of {} {}s per second.", self.time, self.position.magnitude(), self.baseUnitName, self.velocity.magnitude(), self.baseUnitName);
 		}
 	}
-	fn inseconds(self, timef: f64) -> Kinematics {
+	fn inseconds(self, timef: f32) -> Kinematics {
 		let timeu = timef - self.time;
 		Kinematics {
 			position: VectorC {
@@ -217,7 +228,7 @@ impl Kinematics {
 		}
 	}
 
-	fn inminutes(self, timefm: f64) -> Kinematics {
+	fn inminutes(self, timefm: f32) -> Kinematics {
 		let timef = timefm / 60.0;
 		let timeu = timef - self.time;
 		Kinematics {
@@ -237,7 +248,7 @@ impl Kinematics {
 		}
 	}
 
-	fn inhours(self, timefh: f64) -> Kinematics {
+	fn inhours(self, timefh: f32) -> Kinematics {
 		let timefm = timefh / 60.0;
 		let timef = timefm / 60.0;
 		let timeu = timef - self.time;
@@ -258,7 +269,7 @@ impl Kinematics {
 		}
 	}
 
-	fn indays(self, timefd: f64) -> Kinematics {
+	fn indays(self, timefd: f32) -> Kinematics {
 		let timefh = timefd / 12.0;
 		let timefm = timefh / 60.0;
 		let timef = timefm / 60.0;
@@ -284,13 +295,13 @@ impl Kinematics {
 /*   CUSTOM VECTOR   */
 #[derive(Debug, Copy, Clone)]
 struct VectorC {
-	x: f64,
-	y: f64,
-	z: f64,
+	x: f32,
+	y: f32,
+	z: f32,
 }
 impl VectorC {
-	fn magnitude(&self) -> f64 {
-		let rsqu: f64 = self.x.powf(2.0) + self.y.powf(2.0) + self.z.powf(2.0);
+	fn magnitude(&self) -> f32 {
+		let rsqu: f32 = self.x.powf(2.0) + self.y.powf(2.0) + self.z.powf(2.0);
 		rsqu.sqrt()
 	}
 }
@@ -316,5 +327,43 @@ impl Div for VectorC {
 	type Output = Self;
 	fn div(self, vec2: Self) -> Self {
 		VectorC {x: self.x / vec2.x, y: self.y / vec2.y, z: self.z / vec2.z}
+	}
+}
+
+/*   CUSTOM ROTATOR   */
+#[derive(Debug, Copy, Clone)]
+struct RotatorC {
+	pitch: f32,
+	yaw: f32,
+	roll: f32,
+}
+impl RotatorC {
+	fn magnitude(&self) -> f32 {
+		let rsqu: f32 = self.pitch.powf(2.0) + self.yaw.powf(2.0) + self.roll.powf(2.0);
+		rsqu.sqrt()
+	}
+}
+impl Add for RotatorC {
+	type Output = Self;
+	fn add(self, rot2: Self) -> Self {
+		RotatorC {pitch: self.pitch + rot2.pitch, yaw: self.yaw + rot2.yaw, roll: self.roll + rot2.roll}
+	}
+}
+impl Sub for RotatorC {
+	type Output = Self;
+	fn sub(self, rot2: Self) -> Self {
+		RotatorC {pitch: self.pitch - rot2.pitch, yaw: self.yaw - rot2.yaw, roll: self.roll - rot2.roll}
+	}
+}
+impl Mul for RotatorC {
+	type Output = Self;
+	fn mul(self, rot2: Self) -> Self {
+		RotatorC {pitch: self.pitch * rot2.pitch, yaw: self.yaw * rot2.yaw, roll: self.roll * rot2.roll}
+	}
+}
+impl Div for RotatorC {
+	type Output = Self;
+	fn div(self, rot2: Self) -> Self {
+		RotatorC {pitch: self.pitch / rot2.pitch, yaw: self.yaw / rot2.yaw, roll: self.roll / rot2.roll}
 	}
 }
