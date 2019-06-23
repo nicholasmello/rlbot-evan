@@ -6,7 +6,7 @@ https://discord.gg/pC5Dmqg
 
 ## How to use
 
-If you would like to develop the bot please see the [contributing information file](CONTRIBUTING.md). More info will be given as evan gets further in his development.
+Please see the [wiki](https://github.com/xonmello/rlbot-evan/wiki) for information on how to use the bot.
 
 ## Creating your own
 
