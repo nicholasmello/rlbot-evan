@@ -19,10 +19,7 @@ impl rlbot::Bot for MyBot {
     }
 }
 
-fn get_input(
-    player_index: usize,
-    packet: &rlbot::GameTickPacket,
-) -> Option<rlbot::ControllerState> {
+fn get_input(player_index: usize, packet: &rlbot::GameTickPacket) -> Option<rlbot::ControllerState> {
 	let ball = packet.ball.as_ref()?;
     let mycontrollerstate = packetConverter(player_index, packet, ball);
 
@@ -38,11 +35,10 @@ fn get_input(
     })
 }
 
-
 fn packetConverter(player_index: usize, packet: &rlbot::GameTickPacket, ball: &rlbot::BallInfo) -> Controller {
 	let evan = &packet.players[player_index];
 	let mut opp_index = 1;
-	if player_index = 0 {
+	if player_index == 0 {
 		opp_index = 1;
 	} else {
 		opp_index = 0;
@@ -87,18 +83,17 @@ fn evan_input(packet: Packet) -> Controller {
 		time: 0.0,
 		baseUnitName: "Unit".to_string(),
 	};
-	let mut current_state = kickoff{expired: false};
-	/*
-	if current_state.expired == true {
-		if kickoff{expired: false}.available(packet) {
+	let mut current_state = States{current: CurrentState::kickoff, expired: false};
+
+	/*if current_state.expired == true {
+		if kickoff::available(packet) == true {
 			current_state = kickoff{expired: false};
 			println!("State Change: Kickoff");
 		} else {
 			current_state = attb{expired: false};
 			println!("State Change: ATTB");
 		}
-	}
-	*/
+	}*/
 	controllercap(current_state.execute(packet))
 }
 
@@ -125,59 +120,63 @@ fn cap(num: f32) -> f32 {
 }
 
 #[derive(Debug)]
-struct kickoff{
-	expired: bool
-}
-impl kickoff {
-	fn available(&self, pack: Packet) -> bool {
-		if pack.roundActive == true {
-			return true;
-		}
-		false
-	}
-	fn execute(mut self, pack: Packet) -> Controller {
-		if pack.ballLocation.x != 0.0 && pack.ballLocation.y != 0.0 {
-		 	self.expired = true;
-		}
-		let mut controllerBoost = true;
-		let mut controllerSteer = 0.0;
-		let mut controllerJump = false;
-		let mut controllerPitch = 0.0;
-		let mut controllerYaw = 0.0;
-		let mut controllerRoll = 0.0;
-		Controller {
-			throttle: 1.0,
-			boost: controllerBoost,
-			steer: controllerSteer,
-			jump: controllerJump,
-			pitch: controllerPitch,
-			yaw: controllerYaw,
-			roll: controllerRoll,
-			drift: false,
-		}
-	}
+enum CurrentState {
+	kickoff,
+	attb,
 }
 
 #[derive(Debug)]
-struct attb{
-	expired: bool
+struct States {
+	current: CurrentState,
+	expired: bool,
 }
-impl attb {
-	fn available(&self, pack: Packet) -> bool {
-		true
+impl States {
+	fn available(mut self, pack: Packet) -> bool {
+		let curr = self.current;
+		if curr as usize == CurrentState::kickoff as usize {
+			if pack.roundActive == true {
+				return true;
+			}
+			return false;
+		} else {
+			return true;
+		}
 	}
 	fn execute(mut self, pack: Packet) -> Controller {
-		self.expired = true;
-		let mut controllerSteer = 0.0; // Needs steering mechanism.
-		Controller {
-			throttle: 1.0,
-			boost: false,
-			steer: controllerSteer,
-			jump: false,
-			pitch: 0.0,
-			yaw: 0.0,
-			roll: 0.0,
-			drift: false,
+		let curr = self.current;
+		if curr as usize == CurrentState::kickoff as usize {
+			if pack.ballLocation.x != 0.0 && pack.ballLocation.y != 0.0 {
+			 	self.expired = true;
+			}
+			let mut controllerBoost = true;
+			let mut controllerSteer = 0.0;
+			let mut controllerJump = false;
+			let mut controllerPitch = 0.0;
+			let mut controllerYaw = 0.0;
+			let mut controllerRoll = 0.0;
+			return Controller {
+				throttle: 1.0,
+				boost: controllerBoost,
+				steer: controllerSteer,
+				jump: controllerJump,
+				pitch: controllerPitch,
+				yaw: controllerYaw,
+				roll: controllerRoll,
+				drift: false,
+			};
+		} else {
+			self.expired = true;
+			let mut controllerSteer = 0.0; // Needs steering mechanism.
+			return Controller {
+				throttle: 1.0,
+				boost: false,
+				steer: controllerSteer,
+				jump: false,
+				pitch: 0.0,
+				yaw: 0.0,
+				roll: 0.0,
+				drift: false,
+			};
 		}
 	}
 }
