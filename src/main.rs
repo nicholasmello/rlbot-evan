@@ -41,7 +41,13 @@ fn get_input(
 
 fn packetConverter(player_index: usize, packet: &rlbot::GameTickPacket, ball: &rlbot::BallInfo) -> Controller {
 	let evan = &packet.players[player_index];
-	let opp = &packet.players[1]; // MIGHT NOT WORK FOR TOURNAMENTS
+	let mut opp_index = 1;
+	if player_index = 0 {
+		opp_index = 1;
+	} else {
+		opp_index = 0;
+	}
+	let opp = &packet.players[opp_index];
 	let mut mypacket = Packet {
 		ballLocation: VectorC {x: ball.physics.location.x, y: ball.physics.location.y, z: ball.physics.location.z, },
 		ballVelocity: VectorC {x: ball.physics.velocity.x, y: ball.physics.velocity.y, z: ball.physics.velocity.z, },
