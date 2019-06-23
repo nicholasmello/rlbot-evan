@@ -1,5 +1,5 @@
 use std::ops::{Mul, Add, Sub, Div};
-use std::{error::Error, f32::consts::PI};
+use std::error::Error;
 
 fn main() -> Result<(), Box<dyn Error>> {
     rlbot::run_bot(MyBot { player_index: 0 })
@@ -81,20 +81,46 @@ fn evan_input(packet: Packet) -> Controller {
 		time: 0.0,
 		baseUnitName: "Unit".to_string(),
 	};
-	let mut current_state = kickoff {active: true};
-	current_state.execute(packet)
-	// Needs Controller limiter before return. -1:1
+	let mut current_state = kickoff{expired: false};
+	/*
+	if current_state.expired == true {
+		if kickoff{expired: false}.available(packet) {
+			current_state = kickoff{expired: false};
+			println!("State Change: Kickoff");
+		} else {
+			current_state = attb{expired: false};
+			println!("State Change: ATTB");
+		}
+	}
+	*/
+	controllercap(current_state.execute(packet))
+}
+
+fn controllercap(controller_state: Controller) -> Controller {
+	Controller {
+		throttle: cap(controller_state.throttle),
+		boost: controller_state.boost,
+		steer: cap(controller_state.steer),
+		jump: controller_state.jump,
+		pitch: cap(controller_state.pitch),
+		yaw: cap(controller_state.yaw),
+		roll: cap(controller_state.roll),
+		drift: controller_state.drift,
+	}
+}
+
+fn cap(num: f32) -> f32 {
+	if num > 1.0 {
+		return 1.0;
+	} else if num < -1.0 {
+		return -1.0
+	}
+	num
 }
 
 #[derive(Debug)]
-enum CurrentState {
-	kickoff,
-	attb,
-}
-
-#[derive(Debug)]
-struct kickoff {
-	active: bool
+struct kickoff{
+	expired: bool
 }
 impl kickoff {
 	fn available(&self, pack: Packet) -> bool {
@@ -103,7 +129,10 @@ impl kickoff {
 		}
 		false
 	}
-	fn execute(&self, pack: Packet) -> Controller {
+	fn execute(mut self, pack: Packet) -> Controller {
+		if pack.ballLocation.x != 0.0 && pack.ballLocation.y != 0.0 {
+		 	self.expired = true;
+		}
 		let mut controllerBoost = true;
 		let mut controllerSteer = 0.0;
 		let mut controllerJump = false;
@@ -121,21 +150,18 @@ impl kickoff {
 			drift: false,
 		}
 	}
-	fn expired(&self, pack: Packet) -> bool {
-		if pack.ballLocation.x == 0.0 && pack.ballLocation.y == 0.0 {
-		 	return false;
-		}
-		true
-	}
 }
 
 #[derive(Debug)]
-struct attb();
+struct attb{
+	expired: bool
+}
 impl attb {
-	fn available(pack: Packet) -> bool {
+	fn available(&self, pack: Packet) -> bool {
 		true
 	}
-	fn execute(pack: Packet) -> Controller {
+	fn execute(mut self, pack: Packet) -> Controller {
+		self.expired = true;
 		let mut controllerSteer = 0.0; // Needs steering mechanism.
 		Controller {
 			throttle: 1.0,
@@ -147,9 +173,6 @@ impl attb {
 			roll: 0.0,
 			drift: false,
 		}
-	}
-	fn expired(pack: Packet) -> bool {
-		true
 	}
 }
 
