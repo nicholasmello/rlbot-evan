@@ -1,6 +1,8 @@
 use std::ops::{Mul, Add, Sub, Div};
 use std::error::Error;
 
+static mut CURRENT_STATE: States = States{current: CurrentState::kickoff, expired: false};
+
 fn main() -> Result<(), Box<dyn Error>> {
     rlbot::run_bot(MyBot { player_index: 0 })
 }
@@ -83,18 +85,19 @@ fn evan_input(packet: Packet) -> Controller {
 		time: 0.0,
 		baseUnitName: "Unit".to_string(),
 	};
-	let mut current_state = States{current: CurrentState::kickoff, expired: false};
-
-	/*if current_state.expired == true {
-		if kickoff::available(packet) == true {
-			current_state = kickoff{expired: false};
-			println!("State Change: Kickoff");
-		} else {
-			current_state = attb{expired: false};
-			println!("State Change: ATTB");
+	unsafe {
+		if CURRENT_STATE.expired == true {
+			let kickoffState = States{current: CurrentState::kickoff, expired: false};
+			if kickoffState.available(&packet) == true {
+				CURRENT_STATE = States{current: CurrentState::kickoff, expired: false};
+				println!("State Change: Kickoff");
+			} else {
+				CURRENT_STATE = States{current: CurrentState::attb, expired: false};
+				println!("State Change: ATTB");
+			}
 		}
-	}*/
-	controllercap(current_state.execute(packet))
+		return controllercap(CURRENT_STATE.execute(packet))
+	}
 }
 
 fn controllercap(controller_state: Controller) -> Controller {
@@ -131,7 +134,7 @@ struct States {
 	expired: bool,
 }
 impl States {
-	fn available(mut self, pack: Packet) -> bool {
+	fn available(mut self, pack: &Packet) -> bool {
 		let curr = self.current;
 		if curr as usize == CurrentState::kickoff as usize {
 			if pack.roundActive == true {
