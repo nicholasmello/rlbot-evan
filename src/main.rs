@@ -143,34 +143,9 @@ impl States {
 		let curr = &self.current;
 		let kickoff: u32 = 1;
 		if curr == &kickoff {
-			let mut controllerBoost = true;
-			let mut controllerSteer = 0.0;
-			let mut controllerJump = false;
-			let mut controllerPitch = 0.0;
-			let mut controllerYaw = 0.0;
-			let mut controllerRoll = 0.0;
-			return Controller {
-				throttle: 1.0,
-				boost: controllerBoost,
-				steer: controllerSteer,
-				jump: controllerJump,
-				pitch: controllerPitch,
-				yaw: controllerYaw,
-				roll: controllerRoll,
-				drift: false,
-			};
+			return executeKickoff(pack);
 		} else {
-			let mut controllerSteer = 0.0; // Needs steering mechanism.
-			return Controller {
-				throttle: 1.0,
-				boost: false,
-				steer: controllerSteer,
-				jump: false,
-				pitch: 0.0,
-				yaw: 0.0,
-				roll: 0.0,
-				drift: false,
-			};
+			return executeAttb(pack);
 		}
 	}
 	fn expired(&self, pack: &Packet) -> bool {
@@ -187,6 +162,45 @@ impl States {
 	}
 }
 
+fn executeKickoff(pack: &Packet) -> Controller {
+	let mut controllerBoost = true;
+	let mut controllerSteer = 0.0;
+	let mut controllerJump = false;
+	let mut controllerPitch = 0.0;
+	let mut controllerYaw = 0.0;
+	let mut controllerRoll = 0.0;
+	return Controller {
+		throttle: 1.0,
+		boost: controllerBoost,
+		steer: controllerSteer,
+		jump: controllerJump,
+		pitch: controllerPitch,
+		yaw: controllerYaw,
+		roll: controllerRoll,
+		drift: false,
+	};
+}
+fn executeAttb(pack: &Packet) -> Controller {
+	let mut controllerSteer = 0.0; // Needs steering mechanism.
+	return Controller {
+		throttle: 1.0,
+		boost: false,
+		steer: controllerSteer,
+		jump: false,
+		pitch: 0.0,
+		yaw: 0.0,
+		roll: 0.0,
+		drift: false,
+	};
+}
+/*
+fn toLocal(arg: Type) -> RetType {
+	unimplemented!();
+	// The magnitude of the vector will stay the same no matter what you rotated it at.
+	// You can use subtraction to find the new angle the vector needs to be at.
+	// To find the x and y coordinates you can just use sin and cos with the magnitude and the angle.
+}
+*/
 /* CUSTOM CONTROLLER AND PACKET */
 #[derive(Debug)]
 struct Controller {
