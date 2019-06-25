@@ -1,7 +1,7 @@
 use std::ops::{Mul, Add, Sub, Div};
 use std::error::Error;
 
-static mut CURRENT_STATE: States = States{current: CurrentState::kickoff, expired: false};
+static mut CURRENT_STATE: States = States{current: 1};
 
 fn main() -> Result<(), Box<dyn Error>> {
     rlbot::run_bot(MyBot { player_index: 0 })
@@ -86,17 +86,17 @@ fn evan_input(packet: Packet) -> Controller {
 		baseUnitName: "Unit".to_string(),
 	};
 	unsafe {
-		if CURRENT_STATE.expired == true {
-			let kickoffState = States{current: CurrentState::kickoff, expired: false};
+		if CURRENT_STATE.expired(&packet) == true {
+			let kickoffState = States{current: 1};
 			if kickoffState.available(&packet) == true {
-				CURRENT_STATE = States{current: CurrentState::kickoff, expired: false};
+				CURRENT_STATE = States{current: 1};
 				println!("State Change: Kickoff");
 			} else {
-				CURRENT_STATE = States{current: CurrentState::attb, expired: false};
+				CURRENT_STATE = States{current: 2};
 				println!("State Change: ATTB");
 			}
 		}
-		return controllercap(CURRENT_STATE.execute(packet))
+		return controllercap(CURRENT_STATE.execute(&packet))
 	}
 }
 
@@ -123,20 +123,14 @@ fn cap(num: f32) -> f32 {
 }
 
 #[derive(Debug)]
-enum CurrentState {
-	kickoff,
-	attb,
-}
-
-#[derive(Debug)]
 struct States {
-	current: CurrentState,
-	expired: bool,
+	current: u32
 }
 impl States {
-	fn available(mut self, pack: &Packet) -> bool {
-		let curr = self.current;
-		if curr as usize == CurrentState::kickoff as usize {
+	fn available(&self, pack: &Packet) -> bool {
+		let curr = &self.current;
+		let kickoff: u32 = 1;
+		if curr == &kickoff {
 			if pack.roundActive == true {
 				return true;
 			}
@@ -145,12 +139,10 @@ impl States {
 			return true;
 		}
 	}
-	fn execute(mut self, pack: Packet) -> Controller {
-		let curr = self.current;
-		if curr as usize == CurrentState::kickoff as usize {
-			if pack.ballLocation.x != 0.0 && pack.ballLocation.y != 0.0 {
-			 	self.expired = true;
-			}
+	fn execute(&self, pack: &Packet) -> Controller {
+		let curr = &self.current;
+		let kickoff: u32 = 1;
+		if curr == &kickoff {
 			let mut controllerBoost = true;
 			let mut controllerSteer = 0.0;
 			let mut controllerJump = false;
@@ -168,7 +160,6 @@ impl States {
 				drift: false,
 			};
 		} else {
-			self.expired = true;
 			let mut controllerSteer = 0.0; // Needs steering mechanism.
 			return Controller {
 				throttle: 1.0,
@@ -180,6 +171,18 @@ impl States {
 				roll: 0.0,
 				drift: false,
 			};
+		}
+	}
+	fn expired(&self, pack: &Packet) -> bool {
+		let curr = &self.current;
+		let kickoff: u32 = 1;
+		if curr == &kickoff {
+			if pack.ballLocation.x != 0.0 && pack.ballLocation.y != 0.0 {
+			 	return true;
+			}
+			return false;
+		} else {
+			return true;
 		}
 	}
 }
