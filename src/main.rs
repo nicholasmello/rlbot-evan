@@ -1,6 +1,7 @@
 use std::ops::{Mul, Add, Sub, Div};
 use std::error::Error;
 use std::f32;
+use std::f32::consts::PI;
 
 static mut CURRENT_STATE: States = States{current: 1};
 
@@ -182,7 +183,8 @@ fn executeKickoff(pack: &Packet) -> Controller {
 	};
 }
 fn executeAttb(pack: &Packet) -> Controller {
-	let mut controllerSteer = 0.0; // Needs steering mechanism.
+	let localVector = toLocal(pack.ballLocation, pack);
+	let controllerSteer = (localVector.y.atan2(localVector.x));
 	return Controller {
 		throttle: 1.0,
 		boost: false,
@@ -195,7 +197,7 @@ fn executeAttb(pack: &Packet) -> Controller {
 	};
 }
 
-fn toLocal(orig: VectorC, pack: Packet) -> VectorC {
+fn toLocal(orig: VectorC, pack: &Packet) -> VectorC {
 	let angle_of_rotation = pack.evan.rotation.yaw;
 	let angle_to_vector = orig.y.atan2(orig.x);
 	let newangle = angle_to_vector - angle_of_rotation;
