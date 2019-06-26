@@ -1,5 +1,6 @@
 use std::ops::{Mul, Add, Sub, Div};
 use std::error::Error;
+use std::f32;
 
 static mut CURRENT_STATE: States = States{current: 1};
 
@@ -90,10 +91,10 @@ fn evan_input(packet: Packet) -> Controller {
 			let kickoffState = States{current: 1};
 			if kickoffState.available(&packet) == true {
 				CURRENT_STATE = States{current: 1};
-				println!("State Change: Kickoff");
+				//println!("State Change: Kickoff");
 			} else {
 				CURRENT_STATE = States{current: 2};
-				println!("State Change: ATTB");
+				//println!("State Change: ATTB");
 			}
 		}
 		return controllercap(CURRENT_STATE.execute(&packet))
@@ -193,14 +194,21 @@ fn executeAttb(pack: &Packet) -> Controller {
 		drift: false,
 	};
 }
-/*
-fn toLocal(arg: Type) -> RetType {
-	unimplemented!();
+
+fn toLocal(orig: VectorC, pack: Packet) -> VectorC {
+	let angle_of_rotation = pack.evan.rotation.yaw;
+	let angle_to_vector = orig.y.atan2(orig.x);
+	let newangle = angle_to_vector - angle_of_rotation;
+	VectorC {
+		x: orig.magnitude() * newangle.sin(),
+		y: orig.magnitude() * newangle.cos(),
+		z: orig.z,
+	}
 	// The magnitude of the vector will stay the same no matter what you rotated it at.
 	// You can use subtraction to find the new angle the vector needs to be at.
 	// To find the x and y coordinates you can just use sin and cos with the magnitude and the angle.
 }
-*/
+
 /* CUSTOM CONTROLLER AND PACKET */
 #[derive(Debug)]
 struct Controller {
