@@ -92,10 +92,8 @@ fn evan_input(packet: Packet) -> Controller {
 			let kickoffState = States{current: 1};
 			if kickoffState.available(&packet) == true {
 				CURRENT_STATE = States{current: 1};
-				//println!("State Change: Kickoff");
 			} else {
 				CURRENT_STATE = States{current: 2};
-				//println!("State Change: ATTB");
 			}
 		}
 		return controllercap(CURRENT_STATE.execute(&packet))
@@ -133,7 +131,7 @@ impl States {
 		let curr = &self.current;
 		let kickoff: u32 = 1;
 		if curr == &kickoff {
-			if pack.roundActive == true {
+			if pack.roundActive == false {
 				return true;
 			}
 			return false;
@@ -154,7 +152,7 @@ impl States {
 		let curr = &self.current;
 		let kickoff: u32 = 1;
 		if curr == &kickoff {
-			if pack.ballLocation.x != 0.0 && pack.ballLocation.y != 0.0 {
+			if pack.ballLocation.x != 0.0 || pack.ballLocation.y != 0.0 {
 			 	return true;
 			}
 			return false;
@@ -198,12 +196,16 @@ fn executeAttb(pack: &Packet) -> Controller {
 }
 
 fn toLocal(orig: VectorC, pack: &Packet) -> VectorC {
+	let newx = orig.x - pack.evan.location.x;
+	let newy = orig.y - pack.evan.location.y;
 	let angle_of_rotation = pack.evan.rotation.yaw;
-	let angle_to_vector = orig.y.atan2(orig.x);
+	let angle_to_vector = newy.atan2(newx)+PI;
 	let newangle = angle_to_vector - angle_of_rotation;
+	println!("Angle: {} | Yaw: {}", (newangle*180.0)/PI, pack.evan.rotation.yaw);
+	//println!("Turn: {} | Orig: {}", newangle, orig.y.atan2(orig.x));
 	VectorC {
-		x: orig.magnitude() * newangle.sin(),
-		y: orig.magnitude() * newangle.cos(),
+		x: orig.magnitude() * newangle.cos(),
+		y: orig.magnitude() * newangle.sin(),
 		z: orig.z,
 	}
 	// The magnitude of the vector will stay the same no matter what you rotated it at.
