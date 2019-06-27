@@ -56,7 +56,7 @@ fn packetConverter(player_index: usize, packet: &rlbot::GameTickPacket, ball: &r
 		evan: PacketPlayer {
 			location: VectorC {x: evan.physics.location.x, y: evan.physics.location.y, z: evan.physics.location.z, },
 			velocity: VectorC {x: evan.physics.velocity.x, y: evan.physics.velocity.y, z: evan.physics.velocity.z, },
-			rotation: RotatorC {pitch: evan.physics.rotation.pitch, yaw: evan.physics.rotation.yaw, roll: evan.physics.rotation.roll, },
+			rotation: RotatorC {pitch: evan.physics.rotation.pitch, yaw: evan.physics.rotation.yaw-(PI/2.0), roll: evan.physics.rotation.roll, },
 			isTouching: evan.has_wheel_contact,
 			boost: evan.boost,
 			team: teamtobool(evan.team),
@@ -168,12 +168,18 @@ impl States {
 }
 
 fn executeKickoff(pack: &Packet) -> Controller {
+	let localBall = toLocal(pack.ballLocation, pack);
+	let localDistance = ((localBall.x).powf(2.0) + (localBall.y).powf(2.0)).sqrt();
 	let mut controllerBoost = true;
-	let mut controllerSteer = 0.0;
+	let mut controllerSteer = steerc(localBall.y.atan2(localBall.x));
 	let mut controllerJump = false;
 	let mut controllerPitch = 0.0;
 	let mut controllerYaw = 0.0;
 	let mut controllerRoll = 0.0;
+	if pack.evan.location.y.abs() < 700.0 {
+		controllerJump = true;
+		controllerPitch = -1.0;
+	}
 	return Controller {
 		throttle: 1.0,
 		boost: controllerBoost,
@@ -186,8 +192,8 @@ fn executeKickoff(pack: &Packet) -> Controller {
 	};
 }
 fn executeAttb(pack: &Packet) -> Controller {
-	let localVector = toLocal(pack.ballLocation, pack);
-	let controllerSteer = steerc(localVector.y.atan2(localVector.x));
+	let localBall = toLocal(pack.ballLocation, pack);
+	let controllerSteer = steerc(localBall.y.atan2(localBall.x));
 	return Controller {
 		throttle: 1.0,
 		boost: false,
@@ -205,21 +211,33 @@ fn steerc(angle: f32) -> f32 {
 }
 
 fn toLocal(orig: VectorC, pack: &Packet) -> VectorC {
-	let newx = orig.x - pack.evan.location.x;
-	let newy = orig.y - pack.evan.location.y;
-	let angle_of_rotation = pack.evan.rotation.yaw;
-	let angle_to_vector = newy.atan2(newx)+PI;
-	let newangle = angle_to_vector - angle_of_rotation;
-	println!("Angle: {} | Yaw: {}", (newangle*180.0)/PI, pack.evan.rotation.yaw);
-	//println!("Turn: {} | Orig: {}", newangle, orig.y.atan2(orig.x));
-	VectorC {
-		x: orig.magnitude() * newangle.cos(),
-		y: orig.magnitude() * newangle.sin(),
-		z: orig.z,
+	let mut adjusted_yaw = pack.evan.rotation.yaw;
+	loop {
+		if adjusted_yaw > PI {
+			adjusted_yaw -= 2.0 * PI;
+		} else if adjusted_yaw < -PI {
+			adjusted_yaw += 2.0 * PI;
+		} else {
+			break;
+		}
 	}
-	// The magnitude of the vector will stay the same no matter what you rotated it at.
+	let new = VectorC {
+		x: orig.x - pack.evan.location.x,
+		y: orig.y - pack.evan.location.y,
+		z: orig.z,
+	};
+	let angle_of_rotation = adjusted_yaw;
+	let angle_to_vector = new.y.atan2(new.x) - (PI/2.0);
 	// You can use subtraction to find the new angle the vector needs to be at.
+	let newangle = angle_to_vector - angle_of_rotation;
+	println!("Yaw Degrees: {} | Yaw Radians: {}", (angle_to_vector*180.0)/PI, angle_to_vector);
+	// The magnitude of the vector will stay the same no matter what you rotated it at.
 	// To find the x and y coordinates you can just use sin and cos with the magnitude and the angle.
+	VectorC {
+		x: new.magnitude() * newangle.cos(),
+		y: new.magnitude() * newangle.sin(),
+		z: new.z,
+	}
 }
 
 /* CUSTOM CONTROLLER AND PACKET */
