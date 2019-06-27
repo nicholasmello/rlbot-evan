@@ -187,7 +187,7 @@ fn executeKickoff(pack: &Packet) -> Controller {
 }
 fn executeAttb(pack: &Packet) -> Controller {
 	let localVector = toLocal(pack.ballLocation, pack);
-	let controllerSteer = (localVector.y.atan2(localVector.x));
+	let controllerSteer = steerc(localVector.y.atan2(localVector.x));
 	return Controller {
 		throttle: 1.0,
 		boost: false,
@@ -198,6 +198,10 @@ fn executeAttb(pack: &Packet) -> Controller {
 		roll: 0.0,
 		drift: false,
 	};
+}
+
+fn steerc(angle: f32) -> f32 {
+	angle * -1.0
 }
 
 fn toLocal(orig: VectorC, pack: &Packet) -> VectorC {
