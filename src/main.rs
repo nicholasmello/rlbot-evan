@@ -39,6 +39,7 @@ fn get_input(player_index: usize, packet: &rlbot::GameTickPacket) -> Option<rlbo
     })
 }
 
+/* Converts packets into my own packet and controller system and back */
 fn packetConverter(player_index: usize, packet: &rlbot::GameTickPacket, ball: &rlbot::BallInfo) -> Controller {
 	let evan = &packet.players[player_index];
 	let mut opp_index = 1;
@@ -80,6 +81,7 @@ fn teamtobool(team: i32) -> bool {
 }
 
 fn evan_input(packet: Packet) -> Controller {
+	// Prediction not used yet. Still needs bounces.
 	let prediction = Kinematics {
 		position: packet.ballLocation,
 		velocity: packet.ballVelocity,
@@ -87,8 +89,10 @@ fn evan_input(packet: Packet) -> Controller {
 		time: 0.0,
 		baseUnitName: "Unit".to_string(),
 	};
+	// Unsafe because global variable current state is being edited by functions.
 	unsafe {
 		if CURRENT_STATE.expired(&packet) == true {
+			// Requires let stateState = States{current: #}; before if statement.
 			let kickoffState = States{current: 1};
 			if kickoffState.available(&packet) == true {
 				CURRENT_STATE = States{current: 1};
@@ -100,6 +104,7 @@ fn evan_input(packet: Packet) -> Controller {
 	}
 }
 
+/* Controller cap function to keep all non boolian values between -1 and 1 */
 fn controllercap(controller_state: Controller) -> Controller {
 	Controller {
 		throttle: cap(controller_state.throttle),
@@ -132,11 +137,11 @@ impl States {
 		let kickoff: u32 = 1;
 		if curr == &kickoff {
 			if pack.roundActive == false {
-				return true;
+				return true; // Checks if the round is active and returns a true or false.
 			}
 			return false;
 		} else {
-			return true;
+			return true; // Always returns true for attb since it is a catch all state.
 		}
 	}
 	fn execute(&self, pack: &Packet) -> Controller {
