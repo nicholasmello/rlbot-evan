@@ -221,13 +221,14 @@ fn toLocal(orig: VectorC, pack: &Packet) -> VectorC {
 			break;
 		}
 	}
+	// In addition to a translation, a 90 degree rotation is made.
 	let new = VectorC {
-		x: orig.x - pack.evan.location.x,
-		y: orig.y - pack.evan.location.y,
+		x: orig.y - pack.evan.location.y,
+		y: pack.evan.location.x - orig.x;
 		z: orig.z,
 	};
 	let angle_of_rotation = adjusted_yaw;
-	let angle_to_vector = new.y.atan2(new.x) - (PI/2.0);
+	let angle_to_vector = new.y.atan2(new.x);
 	// You can use subtraction to find the new angle the vector needs to be at.
 	let newangle = angle_to_vector - angle_of_rotation;
 	println!("Yaw Degrees: {} | Yaw Radians: {}", (angle_to_vector*180.0)/PI, angle_to_vector);
