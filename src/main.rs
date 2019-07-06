@@ -392,6 +392,13 @@ impl VectorC {
 		let rsqu: f32 = self.x.powf(2.0) + self.y.powf(2.0) + self.z.powf(2.0);
 		rsqu.sqrt()
 	}
+	fn factorial(%self) -> VectorC {
+	  VectorC {
+	    x: factorialC(self.x),
+	    y: factorialC(self.y),
+	    z: factorialC(self.z),
+	  }
+	}
 }
 impl Add for VectorC {
 	type Output = Self;
@@ -416,6 +423,15 @@ impl Div for VectorC {
 	fn div(self, vec2: Self) -> Self {
 		VectorC {x: self.x / vec2.x, y: self.y / vec2.y, z: self.z / vec2.z}
 	}
+}
+fn factorialC(num: f32) -> f32 {
+  if num == 0.0 || num == 1.0 {
+    return 1.0;
+  }
+  if num == round(num) {
+    panic!("Number does not have a factorial");
+  }
+  factorialC(num-1) + num
 }
 
 /*   CUSTOM ROTATOR   */
